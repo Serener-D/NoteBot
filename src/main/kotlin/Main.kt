@@ -1,4 +1,3 @@
-import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.command
@@ -9,6 +8,8 @@ import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import com.github.kotlintelegrambot.extensions.filters.Filter
 import dao.QuoteDao
 import dto.QuoteDto
+import service.NotificationScheduler.checkNotificationTime
+import kotlin.concurrent.thread
 
 enum class BotState { IDLE, WAITING_NOTIFICATION_TIME }
 
@@ -65,9 +66,12 @@ val bot = bot {
             }
         }
     }
-}.startPolling()
+}
 
 
 fun main() {
-    TelegramBot
+    thread {
+        checkNotificationTime(bot)
+    }
+    bot.startPolling()
 }
