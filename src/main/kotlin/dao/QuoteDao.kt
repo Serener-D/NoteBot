@@ -105,8 +105,11 @@ object QuoteDao {
     }
 
     fun delete(quoteDto: QuoteDto) {
+        transaction {
         val quote = quoteDto.id?.let { findById(it) }
-        quote?.delete()
+            quote?.delete()
+            commit()
+        }
     }
 
 }
