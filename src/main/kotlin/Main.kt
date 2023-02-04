@@ -101,7 +101,6 @@ val bot = bot {
                 messageToUser = "Quote saved. Enter notification time, ex: 16:00"
                 userStates[message.chat.id] = ConversationState.WAITING_NOTIFICATION_TIME
             } else {
-                // fixme надо еще флажок на true
                 QuoteDao.updateNotificationTimeForLastAddedQuote(message.chat.id, message.text.orEmpty())
                 messageToUser = "Notification set"
                 userStates[message.chat.id] = ConversationState.IDLE

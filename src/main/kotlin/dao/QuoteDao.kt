@@ -6,7 +6,6 @@ import entity.Quote
 import entity.QuoteTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
@@ -48,6 +47,7 @@ object QuoteDao {
         transaction {
             val quotes = Quote.find {
                 QuoteTable.notificationTime eq notificationTime
+                QuoteTable.notificationEnabled eq true
             }
             for (quote in quotes) {
                 quotesList.add(convertToDto(quote))
@@ -70,8 +70,8 @@ object QuoteDao {
     }
 
     fun update(quoteDto: QuoteDto) {
+        val quote = quoteDto.id?.let { findById(it) }
         transaction {
-            val quote = quoteDto.id?.let { findById(it) }
             if (quoteDto.chatId != null) {
                 quote?.chatId = quoteDto.chatId
             }
@@ -97,6 +97,7 @@ object QuoteDao {
                 try {
                     quote.notificationTime =
                         LocalTime.parse(notificationTime).truncatedTo(ChronoUnit.MINUTES).toString()
+                    quote.notificationEnabled = true;
                 } catch (_: Exception) {
                 }
                 commit()
@@ -105,8 +106,8 @@ object QuoteDao {
     }
 
     fun delete(quoteDto: QuoteDto) {
-        transaction {
         val quote = quoteDto.id?.let { findById(it) }
+        transaction {
             quote?.delete()
             commit()
         }
