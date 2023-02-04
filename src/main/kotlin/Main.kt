@@ -1,5 +1,6 @@
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
+import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId
@@ -40,6 +41,52 @@ val bot = bot {
             )
         }
 
+        callbackQuery {
+            val chatId = callbackQuery.message?.chat?.id ?: return@callbackQuery
+            val text = callbackQuery.message?.text ?: return@callbackQuery
+            val quote = QuoteDao.findById(callbackQuery.data.toLong())
+            val buttonsList = ArrayList<InlineKeyboardButton>()
+            buttonsList.add(
+                InlineKeyboardButton.CallbackData(
+                    text = "Delete", callbackData = "delete"
+                )
+            )
+            buttonsList.add(
+                InlineKeyboardButton.CallbackData(
+                    text = "Set notification time\n" + quote?.id?.value.toString(), callbackData = "set_notification"
+                )
+            )
+            buttonsList.add(
+                InlineKeyboardButton.CallbackData(
+                    text = "Enable notification", callbackData = "set_notification"
+                )
+            )
+
+            bot.sendMessage(
+                ChatId.fromId(chatId),
+                quote?.text.orEmpty(),
+                replyMarkup = InlineKeyboardMarkup.create(buttonsList)
+            )
+        }
+
+//        callbackQuery("testButton") {
+//            args
+//            val chatId = callbackQuery.message?.chat?.id ?: return@callbackQuery
+//            bot.sendMessage(ChatId.fromId(chatId), callbackQuery.data)
+//        }
+//
+//        command("get") {
+//            val quoteId = args[0]
+//            bot.sendMessage(chatId = ChatId.fromId(message.chat.id), text = response)
+//        }
+//
+//        command("delete") {
+//            val quoteId = args[0]
+//            bot.sendMessage(chatId = ChatId.fromId(message.chat.id), text = "Quote deleted")
+//        }
+
+//        command()
+
         command("disable") {
             val quotes = QuoteDao.findAllByChatId(message.chat.id)
             for (quote in quotes) {
@@ -49,21 +96,17 @@ val bot = bot {
         }
 
         message(!Filter.Command) {
+            val messageToUser: String
             if (userStates[message.chat.id] == null || userStates[message.chat.id] == BotState.IDLE) {
                 QuoteDao.create(QuoteDto(chatId = message.chat.id, text = message.text))
-                bot.sendMessage(
-                    chatId = ChatId.fromId(message.chat.id),
-                    text = "Quote saved. Enter notification time, ex: 16:00"
-                )
+                messageToUser = "Quote saved. Enter notification time, ex: 16:00"
                 userStates[message.chat.id] = BotState.WAITING_NOTIFICATION_TIME
             } else {
                 QuoteDao.updateNotificationTimeForLastAddedQuote(message.chat.id, message.text.orEmpty())
-                bot.sendMessage(
-                    chatId = ChatId.fromId(message.chat.id),
-                    text = "Notification set"
-                )
+                messageToUser = "Notification set"
                 userStates[message.chat.id] = BotState.IDLE
             }
+            bot.sendMessage(chatId = ChatId.fromId(message.chat.id), text = messageToUser)
         }
     }
 }
