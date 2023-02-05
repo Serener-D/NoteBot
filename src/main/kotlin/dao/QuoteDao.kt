@@ -6,6 +6,7 @@ import entity.Quote
 import entity.QuoteTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
@@ -46,8 +47,8 @@ object QuoteDao {
         val quotesList = ArrayList<QuoteDto>()
         transaction {
             val quotes = Quote.find {
-                QuoteTable.notificationTime eq notificationTime
-                QuoteTable.notificationEnabled eq true
+                QuoteTable.notificationTime eq notificationTime and
+                        (QuoteTable.notificationEnabled eq true)
             }
             for (quote in quotes) {
                 quotesList.add(convertToDto(quote))

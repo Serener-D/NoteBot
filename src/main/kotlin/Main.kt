@@ -17,9 +17,10 @@ import kotlin.concurrent.thread
 
 enum class ConversationState { IDLE, WAITING_NOTIFICATION_TIME }
 
-// fixme надо периодическую очистку контекста сделать
+// fixme clear context after certain periods of time
 val userStates = mutableMapOf<Long, ConversationState>()
 
+// fixme make map for all handlers and comands
 val bot = bot {
     token = "5406796718:AAEdyLsc53hjjhE-enRT1q7i4aAS3OaDoJo"
     dispatch {
@@ -34,7 +35,6 @@ val bot = bot {
                 DeleteCallbackHandler.handle(callbackQuery, bot)
             }
             if (SetNotificationCallbackHandler.getQueryName() == query) {
-                // fixme баг!!! работает только для последней добавленной цитаты
                 SetNotificationCallbackHandler.handle(callbackQuery, bot)
             }
         }
@@ -69,7 +69,6 @@ fun saveQuote(message: Message) {
 }
 
 fun saveNotificationTime(message: Message) {
-    // fixme баг!!! работает только для последней добавленной цитаты
     QuoteDao.updateNotificationTimeForLastAddedQuote(message.chat.id, message.text.orEmpty())
     userStates[message.chat.id] = ConversationState.IDLE
 }
