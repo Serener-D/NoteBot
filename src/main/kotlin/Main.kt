@@ -88,16 +88,16 @@ fun saveNotificationTime(message: Message) {
 }
 
 private fun validateNotificationTime(message: Message): LocalTime {
-    val quoteTime = LocalTime.parse(message.text, DateTimeFormatter.ofPattern("H:mm")).truncatedTo(ChronoUnit.MINUTES)
+    var  quoteTime = LocalTime.parse(message.text, DateTimeFormatter.ofPattern("H:mm")).truncatedTo(ChronoUnit.MINUTES)
     println(quoteTime)
 
     val userLocalTime = LocalTime.ofInstant(Instant.ofEpochSecond(message.date), ZoneId.systemDefault())
     val serverLocalTime = LocalTime.now().truncatedTo(ChronoUnit.MINUTES)
 
     if (userLocalTime.isAfter(serverLocalTime)) {
-        quoteTime.plusHours((userLocalTime.hour - serverLocalTime.hour).toLong())
+        quoteTime = quoteTime.plusHours((userLocalTime.hour - serverLocalTime.hour).toLong())
     } else if (userLocalTime.isBefore(serverLocalTime)) {
-        quoteTime.minusHours((serverLocalTime.hour - userLocalTime.hour).toLong())
+        quoteTime = quoteTime.minusHours((serverLocalTime.hour - userLocalTime.hour).toLong())
     }
     return quoteTime
 }
