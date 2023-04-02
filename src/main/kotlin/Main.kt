@@ -6,18 +6,26 @@ import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Message
 import com.github.kotlintelegrambot.extensions.filters.Filter
 import dao.QuoteDao
+import dao.UserDao
 import dto.QuoteDto
+import dto.UserDto
+import entity.QuoteTable
+import entity.UserTable
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
 import service.NotificationScheduler.checkNotificationTime
 import service.callbackhandler.DeleteCallbackHandler
 import service.callbackhandler.GetCallbackHandler
 import service.callbackhandler.SetNotificationCallbackHandler
+import service.callbackhandler.TimezoneCallbackHandler
 import service.command.DisableCommand
 import service.command.GetQuotesCommand
-import java.time.Instant
+import service.command.TimezoneCommand
 import java.time.LocalTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.*
 import kotlin.concurrent.thread
 
 
@@ -43,6 +51,9 @@ val bot = bot {
             if (SetNotificationCallbackHandler.getQueryName() == query) {
                 SetNotificationCallbackHandler.handle(callbackQuery, bot)
             }
+            if (TimezoneCallbackHandler.getQueryName() == query) {
+                TimezoneCallbackHandler.handle(callbackQuery, bot)
+            }
         }
 
         message(Filter.Command) {
@@ -53,16 +64,20 @@ val bot = bot {
             if ("/getquotes" == command) {
                 GetQuotesCommand.execute(message, bot)
             }
+            if ("/timezone" == command) {
+                TimezoneCommand.execute(message, bot)
+            }
         }
 
         message(!Filter.Command) {
             var messageToUser: String
             if (userStates[message.chat.id] == null || userStates[message.chat.id] == ConversationState.IDLE) {
-                saveQuote(message)
+                QuoteDao.create(QuoteDto(text = message.text.toString(), userDto = UserDto(chatId = message.chat.id)))
+                userStates[message.chat.id] = ConversationState.WAITING_NOTIFICATION_TIME
                 messageToUser = "Quote saved. Enter notification time, ex: 9:00"
             } else {
                 try {
-                    saveNotificationTime(message)
+                    QuoteDao.updateNotificationTimeForLastAddedQuote(message.chat.id, validateNotificationTime(message).toString())
                     messageToUser = "Notification set"
                     userStates[message.chat.id] = ConversationState.IDLE
                 } catch (e: Exception) {
@@ -76,34 +91,31 @@ val bot = bot {
     }
 }
 
-fun saveQuote(message: Message) {
-    QuoteDao.create(QuoteDto(chatId = message.chat.id, text = message.text))
-    userStates[message.chat.id] = ConversationState.WAITING_NOTIFICATION_TIME
-}
-
-fun saveNotificationTime(message: Message) {
-    QuoteDao.updateNotificationTimeForLastAddedQuote(message.chat.id, validateNotificationTime(message).toString())
-    userStates[message.chat.id] = ConversationState.IDLE
-
-}
-
 private fun validateNotificationTime(message: Message): LocalTime {
-    var  quoteTime = LocalTime.parse(message.text, DateTimeFormatter.ofPattern("H:mm")).truncatedTo(ChronoUnit.MINUTES)
-    println(quoteTime)
+    var quoteTime = LocalTime.parse(message.text, DateTimeFormatter.ofPattern("H:mm")).truncatedTo(ChronoUnit.MINUTES)
 
-    val userLocalTime = LocalTime.ofInstant(Instant.ofEpochSecond(message.date), ZoneId.systemDefault())
-    val serverLocalTime = LocalTime.now().truncatedTo(ChronoUnit.MINUTES)
+    var userTimeZoneOffset = UserDao.findByChatId(message.chat.id)?.timeZoneOffset?.toLong()
+    if (userTimeZoneOffset == null) {
+        userTimeZoneOffset = 0;
+    }
 
-    if (userLocalTime.isAfter(serverLocalTime)) {
-        quoteTime = quoteTime.plusHours((userLocalTime.hour - serverLocalTime.hour).toLong())
-    } else if (userLocalTime.isBefore(serverLocalTime)) {
-        quoteTime = quoteTime.minusHours((serverLocalTime.hour - userLocalTime.hour).toLong())
+    val serverTimeZoneOffset = TimeZone.getDefault().rawOffset / (60 * 60 * 1000);
+
+    if (userTimeZoneOffset > serverTimeZoneOffset) {
+        quoteTime = quoteTime.minusHours(userTimeZoneOffset - serverTimeZoneOffset)
+    } else if (userTimeZoneOffset < serverTimeZoneOffset) {
+        quoteTime = quoteTime.plusHours(serverTimeZoneOffset - userTimeZoneOffset)
     }
     return quoteTime
 }
 
-
 fun main() {
+    Database.connect(url = "jdbc:sqlite:mentor.db", driver = "org.sqlite.JDBC")
+    transaction {
+        SchemaUtils.createMissingTablesAndColumns(QuoteTable, UserTable)
+        commit()
+    }
+
     thread {
         checkNotificationTime(bot)
     }

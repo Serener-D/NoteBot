@@ -1,10 +1,12 @@
 package service.callbackhandler
 
+import ConversationState
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.CallbackQuery
 import com.github.kotlintelegrambot.entities.ChatId
 import dao.QuoteDao
 import dto.QuoteDto
+import dto.UserDto
 import userStates
 
 object SetNotificationCallbackHandler : CallbackHandler {
@@ -17,7 +19,7 @@ object SetNotificationCallbackHandler : CallbackHandler {
         if (chatId != null) {
             val quote = QuoteDao.findById(id.toLong())
             QuoteDao.delete(QuoteDto(id = id.toLong()))
-            QuoteDao.create(QuoteDto(chatId = chatId, text = quote?.text))
+            QuoteDao.create(QuoteDto(text = quote?.text, userDto = UserDto(chatId = chatId)))
             userStates[chatId] = ConversationState.WAITING_NOTIFICATION_TIME
             bot.sendMessage(chatId = ChatId.fromId(chatId), text = "Enter notification time, ex: 16:00")
         }

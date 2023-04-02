@@ -5,10 +5,11 @@ import java.time.LocalTime
 
 data class QuoteDto(
     var id: Long? = null,
-    val chatId: Long? = null,
     val text: String? = null,
     val notificationTime: String? = null,
-    val notificationEnabled: Boolean? = false
+    val notificationEnabled: Boolean? = false,
+    // FIME I can use just chatID here
+    val userDto: UserDto? = null
 )
 
 fun convertToDto(quote: Quote): QuoteDto {
@@ -18,9 +19,10 @@ fun convertToDto(quote: Quote): QuoteDto {
     }
     return QuoteDto(
         quote.id.value,
-        quote.chatId,
         quote.text,
         notificationTime,
-        quote.notificationEnabled
+        quote.notificationEnabled,
+        UserDto(quote.user.chatId, quote.user.timeZoneOffset)
     )
+
 }
