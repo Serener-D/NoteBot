@@ -11,11 +11,18 @@ object TimezoneCallbackHandler : CallbackHandler {
     private const val QUERY_NAME = "TIMEZONE"
 
     override fun handle(callbackQuery: CallbackQuery, bot: Bot) {
-        val chatId = callbackQuery.message?.chat?.id
-        if (chatId != null) {
+        val userChatId = callbackQuery.message?.chat?.id
+        if (userChatId != null) {
             val timeZone = callbackQuery.data.split(" ")[1]
-            UserDao.update(UserDto(chatId = chatId, timeZoneOffset = timeZone))
-            bot.sendMessage(chatId = ChatId.fromId(chatId), text = "Timezone set")
+
+            val user = UserDao.findByChatId(userChatId)
+            if (user == null) {
+                UserDao.create(UserDto(chatId = userChatId, timeZoneOffset = timeZone))
+            } else {
+                UserDao.update(UserDto(chatId = userChatId, timeZoneOffset = timeZone))
+            }
+
+            bot.sendMessage(chatId = ChatId.fromId(userChatId), text = "Timezone set")
         }
     }
 

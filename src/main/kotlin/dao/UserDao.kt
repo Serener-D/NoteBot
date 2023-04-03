@@ -1,10 +1,10 @@
 package dao
 
-import dto.QuoteDto
 import dto.UserDto
 import entity.User
 import entity.UserTable
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 object UserDao {
 
@@ -24,6 +24,16 @@ object UserDao {
             commit()
         }
         return user
+    }
+
+    fun create(userDto: UserDto) {
+        transaction {
+            User.new {
+                chatId = userDto.chatId;
+                timeZoneOffset = Optional.ofNullable(userDto.timeZoneOffset).orElse("0")
+            }
+            commit()
+        }
     }
 
     fun update(userDto: UserDto) {

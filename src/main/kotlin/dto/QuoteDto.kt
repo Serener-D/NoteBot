@@ -8,7 +8,7 @@ data class QuoteDto(
     val text: String? = null,
     val notificationTime: String? = null,
     val notificationEnabled: Boolean? = false,
-    // FIME I can use just chatID here
+    // FIXME I can use just chatID here
     val userDto: UserDto? = null
 )
 
