@@ -8,15 +8,6 @@ import java.util.*
 
 object UserDao {
 
-    fun findById(id: Long): User? {
-        var user: User? = null
-        transaction {
-            user = User.findById(id)
-            commit()
-        }
-        return user
-    }
-
     fun findByChatId(chatId: Long): User? {
         var user: User? = null
         transaction {
