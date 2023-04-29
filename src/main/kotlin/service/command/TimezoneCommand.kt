@@ -9,6 +9,8 @@ import service.callbackhandler.TimezoneCallbackHandler
 
 object TimezoneCommand : Command {
 
+    private const val COMMAND_NAME = "/timezone"
+
     private val timeZoneOffsets = listOf(
         "0",
         "+1",
@@ -59,6 +61,10 @@ object TimezoneCommand : Command {
             replyMarkup = InlineKeyboardMarkup.create(buttonsList)
         )
 
+    }
+
+    override fun getCommandName(): String {
+        return COMMAND_NAME
     }
 
 }

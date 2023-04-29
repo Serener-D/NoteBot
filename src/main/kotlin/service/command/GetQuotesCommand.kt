@@ -10,6 +10,8 @@ import service.callbackhandler.GetCallbackHandler
 
 object GetQuotesCommand : Command {
 
+    private const val COMMAND_NAME = "/getquotes"
+
     override fun execute(message: Message, bot: Bot) {
         val quotes = QuoteDao.findAllByChatId(message.chat.id)
         val buttonsList = ArrayList<List<InlineKeyboardButton>>()
@@ -28,6 +30,10 @@ object GetQuotesCommand : Command {
             text = "Saved quotes",
             replyMarkup = InlineKeyboardMarkup.create(buttonsList)
         )
+    }
+
+    override fun getCommandName(): String {
+        return COMMAND_NAME
     }
 
 }

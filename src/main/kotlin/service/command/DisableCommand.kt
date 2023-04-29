@@ -7,11 +7,18 @@ import dao.QuoteDao
 import dto.QuoteDto
 
 object DisableCommand : Command {
+
+    private const val COMMAND_NAME = "/disable"
+
     override fun execute(message: Message, bot: Bot) {
         val quotes = QuoteDao.findAllByChatId(message.chat.id)
         for (quote in quotes) {
             QuoteDao.update(QuoteDto(id = quote.id, notificationEnabled = false))
         }
         bot.sendMessage(chatId = ChatId.fromId(message.chat.id), text = "All notifications disabled")
+    }
+
+    override fun getCommandName(): String {
+        return COMMAND_NAME
     }
 }

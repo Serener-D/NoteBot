@@ -29,57 +29,47 @@ import java.util.*
 import kotlin.concurrent.thread
 
 
-enum class ConversationState { IDLE, WAITING_NOTIFICATION_TIME }
+enum class ConversationState { WAITING_NOTIFICATION_TIME }
 
-// fixme clear context after certain periods of time
 val userStates = mutableMapOf<Long, ConversationState>()
 
-// fixme make map for all handlers and commands
+val callbackMap = mapOf(
+    Pair(GetCallbackHandler.getQueryName(), GetCallbackHandler),
+    Pair(DeleteCallbackHandler.getQueryName(), DeleteCallbackHandler),
+    Pair(SetNotificationCallbackHandler.getQueryName(), SetNotificationCallbackHandler),
+    Pair(TimezoneCallbackHandler.getQueryName(), TimezoneCallbackHandler)
+)
+val commandMap = mapOf(
+    Pair(DisableCommand.getCommandName(), DisableCommand),
+    Pair(GetQuotesCommand.getCommandName(), GetQuotesCommand),
+    Pair(TimezoneCommand.getCommandName(), TimezoneCommand)
+)
+
 val bot = bot {
     token = "5406796718:AAEdyLsc53hjjhE-enRT1q7i4aAS3OaDoJo"
     dispatch {
-
         callbackQuery {
             val query = callbackQuery.data.split(" ")[0]
-
-            if (GetCallbackHandler.getQueryName() == query) {
-                GetCallbackHandler.handle(callbackQuery, bot)
-            }
-            if (DeleteCallbackHandler.getQueryName() == query) {
-                DeleteCallbackHandler.handle(callbackQuery, bot)
-            }
-            if (SetNotificationCallbackHandler.getQueryName() == query) {
-                SetNotificationCallbackHandler.handle(callbackQuery, bot)
-            }
-            if (TimezoneCallbackHandler.getQueryName() == query) {
-                TimezoneCallbackHandler.handle(callbackQuery, bot)
-            }
+            callbackMap[query]?.handle(callbackQuery, bot)
         }
-
         message(Filter.Command) {
             val command = message.text
-            if ("/disable" == command) {
-                DisableCommand.execute(message, bot)
-            }
-            if ("/getquotes" == command) {
-                GetQuotesCommand.execute(message, bot)
-            }
-            if ("/timezone" == command) {
-                TimezoneCommand.execute(message, bot)
-            }
+            commandMap[command]?.execute(message, bot)
         }
-
         message(!Filter.Command) {
             var messageToUser: String
-            if (userStates[message.chat.id] == null || userStates[message.chat.id] == ConversationState.IDLE) {
+            if (userStates[message.chat.id] == null) {
                 QuoteDao.create(QuoteDto(text = message.text.toString(), userDto = UserDto(chatId = message.chat.id)))
                 userStates[message.chat.id] = ConversationState.WAITING_NOTIFICATION_TIME
                 messageToUser = "Quote saved. Enter notification time, ex: 9:00"
             } else {
                 try {
-                    QuoteDao.updateNotificationTimeForLastAddedQuote(message.chat.id, validateNotificationTime(message).toString())
+                    QuoteDao.updateNotificationTimeForLastAddedQuote(
+                        message.chat.id,
+                        validateNotificationTime(message).toString()
+                    )
                     messageToUser = "Notification set"
-                    userStates[message.chat.id] = ConversationState.IDLE
+                    userStates.remove(message.chat.id)
                 } catch (e: Exception) {
                     messageToUser = "Enter valid notification time, ex: 9:00";
                     e.printStackTrace()
@@ -115,7 +105,6 @@ fun main() {
         SchemaUtils.createMissingTablesAndColumns(QuoteTable, UserTable)
         commit()
     }
-
     thread {
         checkNotificationTime(bot)
     }
