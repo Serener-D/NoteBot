@@ -6,8 +6,6 @@ import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Message
 import dao.QuoteDao
 import dao.UserDao
-import dto.QuoteDto
-import dto.UserDto
 import userStates
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -19,7 +17,7 @@ object MessageHandler {
     fun handleMessage(message: Message, bot: Bot) {
         var messageToUser: String
         if (userStates[message.chat.id] == null) {
-            QuoteDao.create(QuoteDto(text = message.text.toString(), userDto = UserDto(chatId = message.chat.id)))
+            QuoteDao.create(text = message.text.toString(), chatId = message.chat.id)
             userStates[message.chat.id] = ConversationState.WAITING_NOTIFICATION_TIME
             messageToUser = "Quote saved. Enter notification time, ex: 9:00"
         } else {
@@ -40,7 +38,8 @@ object MessageHandler {
     }
 
     private fun validateNotificationTime(message: Message): LocalTime {
-        var quoteTime = LocalTime.parse(message.text, DateTimeFormatter.ofPattern("H:mm")).truncatedTo(ChronoUnit.MINUTES)
+        var quoteTime =
+            LocalTime.parse(message.text, DateTimeFormatter.ofPattern("H:mm")).truncatedTo(ChronoUnit.MINUTES)
 
         var userTimeZoneOffset = UserDao.findByChatId(message.chat.id)?.timeZoneOffset?.toLong()
         if (userTimeZoneOffset == null) {

@@ -1,10 +1,8 @@
 package dao
 
-import dto.UserDto
 import entity.User
 import entity.UserTable
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.*
 
 object UserDao {
 
@@ -17,21 +15,21 @@ object UserDao {
         return user
     }
 
-    fun create(userDto: UserDto) {
+    fun create(chatId: Long, timeZoneOffset: String) {
         transaction {
             User.new {
-                chatId = userDto.chatId;
-                timeZoneOffset = Optional.ofNullable(userDto.timeZoneOffset).orElse("0")
+                this.chatId = chatId
+                this.timeZoneOffset = timeZoneOffset
             }
             commit()
         }
     }
 
-    fun update(userDto: UserDto) {
+    fun update(chatId: Long, timeZoneOffset: String) {
         transaction {
-            val user = findByChatId(userDto.chatId)
-            if (userDto.timeZoneOffset != null) {
-                user?.timeZoneOffset = userDto.timeZoneOffset
+            val user = findByChatId(chatId)
+            if (user != null) {
+                user.timeZoneOffset = timeZoneOffset
             }
             commit()
         }

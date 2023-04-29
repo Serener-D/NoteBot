@@ -4,7 +4,6 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.CallbackQuery
 import com.github.kotlintelegrambot.entities.ChatId
 import dao.UserDao
-import dto.UserDto
 
 object TimezoneCallbackHandler : CallbackHandler {
 
@@ -17,9 +16,9 @@ object TimezoneCallbackHandler : CallbackHandler {
 
             val user = UserDao.findByChatId(userChatId)
             if (user == null) {
-                UserDao.create(UserDto(chatId = userChatId, timeZoneOffset = timeZone))
+                UserDao.create(userChatId, timeZone)
             } else {
-                UserDao.update(UserDto(chatId = userChatId, timeZoneOffset = timeZone))
+                UserDao.update(userChatId, timeZone)
             }
 
             bot.sendMessage(chatId = ChatId.fromId(userChatId), text = "Timezone set")
@@ -29,6 +28,5 @@ object TimezoneCallbackHandler : CallbackHandler {
     override fun getQueryName(): String {
         return QUERY_NAME
     }
-
 
 }

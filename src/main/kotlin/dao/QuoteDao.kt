@@ -1,7 +1,5 @@
 package dao
 
-import dto.QuoteDto
-import dto.UserDto
 import entity.Quote
 import entity.QuoteTable
 import entity.User
@@ -23,75 +21,77 @@ object QuoteDao {
         return quote
     }
 
-    fun findAllByChatId(chatId: Long): List<QuoteDto> {
-        val quotesList = ArrayList<QuoteDto>()
+    fun findAllByChatId(chatId: Long): List<Quote> {
+        val quotesList = ArrayList<Quote>()
         transaction {
             QuoteTable.innerJoin(UserTable)
                 .select(UserTable.chatId eq chatId)
-                .map {
-                    QuoteDto(
-                        it[QuoteTable.id].value,
-                        it[QuoteTable.text],
-                        it[QuoteTable.notificationTime],
-                        it[QuoteTable.notificationEnabled],
-                        UserDto(it[UserTable.chatId], it[UserTable.timeZoneOffset])
-                    )
-                }
-                .forEach { quotesList.add(it) }
+                .map { Quote.wrapRow(it) }
+                .forEach(quotesList::add)
             commit()
         }
         return quotesList
     }
 
-    fun update(quoteDto: QuoteDto) {
-        val quote = quoteDto.id?.let { findById(it) }
+    fun findAllByNotificationTime(notificationTime: String): List<Quote> {
+        val quotesList = ArrayList<Quote>()
         transaction {
-            if (quoteDto.text != null) {
-                quote?.text = quoteDto.text
-            }
-            if (quoteDto.notificationTime != null) {
-                quote?.notificationTime = quoteDto.notificationTime
-            }
-            if (quoteDto.notificationEnabled != null) {
-                quote?.notificationEnabled = quoteDto.notificationEnabled
-            }
+            QuoteTable
+                .select(QuoteTable.notificationTime eq notificationTime)
+                .map { Quote.wrapRow(it) }
+                .forEach(quotesList::add)
             commit()
         }
+        return quotesList
     }
 
-    // FIXME doesn't look good. client should know, that he has to provide chatId
-    fun create(quoteDto: QuoteDto) {
-        if (quoteDto.userDto?.chatId != null) {
+    fun update(id: Long, text: String? = null, notificationTime: String? = null, notificationEnabled: Boolean? = null) {
+        val quote = findById(id)
+        if (quote != null) {
             transaction {
-                var savedUser = UserDao.findByChatId(quoteDto.userDto.chatId)
-                if (savedUser == null) {
-                    savedUser = User.new { chatId = quoteDto.userDto.chatId }
+                if (text != null) {
+                    quote.text = text
                 }
-                Quote.new {
-                    user = savedUser
-                    text = quoteDto.text.toString()
+                if (notificationTime != null) {
+                    quote.notificationTime = notificationTime
+                }
+                if (notificationEnabled != null) {
+                    quote.notificationEnabled = notificationEnabled
                 }
                 commit()
             }
         }
     }
 
-    fun updateNotificationTimeForLastAddedQuote(chatId: Long, notificationTime: String) {
-        val quotesDto = findAllByChatId(chatId)
-        val lastQuoteDto = quotesDto.last()
-        val quote = lastQuoteDto.id?.let { findById(it) }
-        if (quote != null) {
-            val quoteDto = QuoteDto(
-                id = quote.id.value,
-                notificationTime = LocalTime.parse(notificationTime).truncatedTo(ChronoUnit.MINUTES).toString(),
-                notificationEnabled = true
-            )
-            update(quoteDto)
+    fun create(chatId: Long, text: String) {
+        transaction {
+            var user = UserDao.findByChatId(chatId)
+            if (user == null) {
+                user = User.new { this.chatId = chatId }
+            }
+            Quote.new {
+                this.user = user
+                this.text = text
+            }
+            commit()
         }
     }
 
-    fun delete(quoteDto: QuoteDto) {
-        val quote = quoteDto.id?.let { findById(it) }
+    fun updateNotificationTimeForLastAddedQuote(chatId: Long, notificationTime: String) {
+        val quotesDto = findAllByChatId(chatId)
+        val lastQuoteDto = quotesDto.last()
+        val quote = findById(lastQuoteDto.id.value)
+        if (quote != null) {
+            update(
+                id = quote.id.value,
+                notificationTime = LocalTime.parse(notificationTime).truncatedTo(ChronoUnit.MINUTES).toString(),
+                notificationEnabled = true,
+            )
+        }
+    }
+
+    fun delete(id: Long) {
+        val quote = findById(id)
         transaction {
             quote?.delete()
             commit()
