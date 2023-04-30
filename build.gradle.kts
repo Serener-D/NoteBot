@@ -6,7 +6,6 @@ plugins {
 }
 
 group = "com.github"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenLocal()
@@ -32,6 +31,7 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.jar {
+    archiveBaseName.set("note")
     manifest {
         attributes["Main-Class"] = "MainKt"
     }
