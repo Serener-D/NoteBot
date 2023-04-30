@@ -19,7 +19,7 @@ object GetQuotesCommand : Command {
             buttonsList.add(
                 listOf<InlineKeyboardButton>(
                     InlineKeyboardButton.CallbackData(
-                        text = quote.text.orEmpty(),
+                        text = quote.text,
                         callbackData = GetCallbackHandler.getQueryName() + " " + quote.id.toString()
                     )
                 )

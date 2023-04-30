@@ -5,6 +5,7 @@ import entity.QuoteTable
 import entity.User
 import entity.UserTable
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalTime
@@ -38,29 +39,12 @@ object QuoteDao {
         transaction {
             QuoteTable
                 .select(QuoteTable.notificationTime eq notificationTime)
+                .andWhere { QuoteTable.notificationEnabled eq true }
                 .map { Quote.wrapRow(it) }
                 .forEach(quotesList::add)
             commit()
         }
         return quotesList
-    }
-
-    fun update(id: Long, text: String? = null, notificationTime: String? = null, notificationEnabled: Boolean? = null) {
-        val quote = findById(id)
-        if (quote != null) {
-            transaction {
-                if (text != null) {
-                    quote.text = text
-                }
-                if (notificationTime != null) {
-                    quote.notificationTime = notificationTime
-                }
-                if (notificationEnabled != null) {
-                    quote.notificationEnabled = notificationEnabled
-                }
-                commit()
-            }
-        }
     }
 
     fun create(chatId: Long, text: String) {
@@ -78,15 +62,15 @@ object QuoteDao {
     }
 
     fun updateNotificationTimeForLastAddedQuote(chatId: Long, notificationTime: String) {
-        val quotesDto = findAllByChatId(chatId)
-        val lastQuoteDto = quotesDto.last()
-        val quote = findById(lastQuoteDto.id.value)
-        if (quote != null) {
-            update(
-                id = quote.id.value,
-                notificationTime = LocalTime.parse(notificationTime).truncatedTo(ChronoUnit.MINUTES).toString(),
-                notificationEnabled = true,
+        transaction {
+            val quote = Quote.wrapRow(
+                QuoteTable.innerJoin(UserTable)
+                    .select(UserTable.chatId eq chatId)
+                    .last()
             )
+            quote.notificationEnabled = true
+            quote.notificationTime = LocalTime.parse(notificationTime).truncatedTo(ChronoUnit.MINUTES).toString()
+            commit()
         }
     }
 

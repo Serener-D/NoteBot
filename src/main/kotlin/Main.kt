@@ -1,3 +1,4 @@
+import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
@@ -17,10 +18,8 @@ import service.callbackhandler.TimezoneCallbackHandler
 import service.command.DisableCommand
 import service.command.GetQuotesCommand
 import service.command.TimezoneCommand
+import java.util.*
 import kotlin.concurrent.thread
-
-
-enum class ConversationState { WAITING_NOTIFICATION_TIME }
 
 val userStates = mutableMapOf<Long, ConversationState>()
 
@@ -36,31 +35,40 @@ val commandMap = mapOf(
     Pair(TimezoneCommand.getCommandName(), TimezoneCommand)
 )
 
-val bot = bot {
-    token = "5406796718:AAEdyLsc53hjjhE-enRT1q7i4aAS3OaDoJo"
-    dispatch {
-        callbackQuery {
-            val query = callbackQuery.data.split(" ")[0]
-            callbackMap[query]?.handle(callbackQuery, bot)
-        }
-        message(Filter.Command) {
-            val command = message.text
-            commandMap[command]?.execute(message, bot)
-        }
-        message(!Filter.Command) {
-            MessageHandler.handleMessage(message, bot)
-        }
-    }
-}
-
-fun main() {
-    Database.connect(url = "jdbc:sqlite:mentor.db", driver = "org.sqlite.JDBC")
-    transaction {
-        SchemaUtils.createMissingTablesAndColumns(QuoteTable, UserTable)
-        commit()
-    }
+fun main(args: Array<String>) {
+    initDatabase()
+    val bot = initBot(args[0])
     thread {
         checkNotificationTime(bot)
     }
     bot.startPolling()
 }
+
+private fun initDatabase() {
+    Database.connect(url = "jdbc:sqlite:mentor.db", driver = "org.sqlite.JDBC")
+    transaction {
+        SchemaUtils.createMissingTablesAndColumns(QuoteTable, UserTable)
+        commit()
+    }
+}
+
+private fun initBot(token: String?): Bot {
+    return bot {
+        this.token = Optional.ofNullable(token).orElseThrow { RuntimeException("You should pass a botToken!") }
+        dispatch {
+            callbackQuery {
+                val query = callbackQuery.data.split(" ")[0]
+                callbackMap[query]?.handle(callbackQuery, bot)
+            }
+            message(Filter.Command) {
+                val command = message.text
+                commandMap[command]?.execute(message, bot)
+            }
+            message(!Filter.Command) {
+                MessageHandler.handleMessage(message, bot)
+            }
+        }
+    }
+}
+
+enum class ConversationState { WAITING_NOTIFICATION_TIME }
