@@ -18,7 +18,6 @@ import service.callbackhandler.TimezoneCallbackHandler
 import service.command.DisableCommand
 import service.command.GetNotesCommand
 import service.command.TimezoneCommand
-import java.util.*
 import kotlin.concurrent.thread
 
 val userStates = mutableMapOf<Long, ConversationState>()
@@ -37,7 +36,7 @@ val commandMap = mapOf(
 
 fun main(args: Array<String>) {
     initDatabase()
-    val bot = initBot(args[0])
+    val bot = initBot(args)
     thread {
         checkNotificationTime(bot)
     }
@@ -52,9 +51,15 @@ private fun initDatabase() {
     }
 }
 
-private fun initBot(token: String?): Bot {
+private fun initBot(args: Array<String>): Bot {
+    var token: String? = null
+    try {
+        token = args[0]
+    } catch (exception: ArrayIndexOutOfBoundsException) {
+        throw RuntimeException("You should pass a botToken!");
+    }
     return bot {
-        this.token = Optional.ofNullable(token).orElseThrow { RuntimeException("You should pass a botToken!") }
+        this.token = token
         dispatch {
             callbackQuery {
                 val query = callbackQuery.data.split(" ")[0]
