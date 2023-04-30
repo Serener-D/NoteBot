@@ -5,7 +5,7 @@ import com.github.kotlintelegrambot.entities.CallbackQuery
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
-import dao.QuoteDao
+import dao.NoteDao
 
 object GetCallbackHandler : CallbackHandler {
 
@@ -14,7 +14,7 @@ object GetCallbackHandler : CallbackHandler {
     override fun handle(callbackQuery: CallbackQuery, bot: Bot) {
         val id = callbackQuery.data.split(" ")[1]
         val chatId = callbackQuery.message?.chat?.id
-        val quote = QuoteDao.findById(id.toLong())
+        val note = NoteDao.findById(id.toLong())
         val buttonsList = ArrayList<InlineKeyboardButton>()
         buttonsList.add(
             InlineKeyboardButton.CallbackData(
@@ -31,7 +31,7 @@ object GetCallbackHandler : CallbackHandler {
         if (chatId != null) {
             bot.sendMessage(
                 ChatId.fromId(chatId),
-                quote?.text.orEmpty(),
+                note?.text.orEmpty(),
                 replyMarkup = InlineKeyboardMarkup.create(buttonsList)
             )
         }

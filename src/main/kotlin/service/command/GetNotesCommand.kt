@@ -5,29 +5,29 @@ import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.Message
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
-import dao.QuoteDao
+import dao.NoteDao
 import service.callbackhandler.GetCallbackHandler
 
-object GetQuotesCommand : Command {
+object GetNotesCommand : Command {
 
-    private const val COMMAND_NAME = "/getquotes"
+    private const val COMMAND_NAME = "/getnotes"
 
     override fun execute(message: Message, bot: Bot) {
-        val quotes = QuoteDao.findAllByChatId(message.chat.id)
+        val notes = NoteDao.findAllByChatId(message.chat.id)
         val buttonsList = ArrayList<List<InlineKeyboardButton>>()
-        for (quote in quotes) {
+        for (note in notes) {
             buttonsList.add(
                 listOf<InlineKeyboardButton>(
                     InlineKeyboardButton.CallbackData(
-                        text = quote.text,
-                        callbackData = GetCallbackHandler.getQueryName() + " " + quote.id.toString()
+                        text = note.text,
+                        callbackData = GetCallbackHandler.getQueryName() + " " + note.id.toString()
                     )
                 )
             )
         }
         bot.sendMessage(
             chatId = ChatId.fromId(message.chat.id),
-            text = "Saved quotes",
+            text = "Saved notes",
             replyMarkup = InlineKeyboardMarkup.create(buttonsList)
         )
     }

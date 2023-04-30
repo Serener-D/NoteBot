@@ -4,7 +4,7 @@ import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.extensions.filters.Filter
-import entity.QuoteTable
+import entity.NoteTable
 import entity.UserTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -16,7 +16,7 @@ import service.callbackhandler.GetCallbackHandler
 import service.callbackhandler.SetNotificationCallbackHandler
 import service.callbackhandler.TimezoneCallbackHandler
 import service.command.DisableCommand
-import service.command.GetQuotesCommand
+import service.command.GetNotesCommand
 import service.command.TimezoneCommand
 import java.util.*
 import kotlin.concurrent.thread
@@ -31,7 +31,7 @@ val callbackMap = mapOf(
 )
 val commandMap = mapOf(
     Pair(DisableCommand.getCommandName(), DisableCommand),
-    Pair(GetQuotesCommand.getCommandName(), GetQuotesCommand),
+    Pair(GetNotesCommand.getCommandName(), GetNotesCommand),
     Pair(TimezoneCommand.getCommandName(), TimezoneCommand)
 )
 
@@ -45,9 +45,9 @@ fun main(args: Array<String>) {
 }
 
 private fun initDatabase() {
-    Database.connect(url = "jdbc:sqlite:mentor.db", driver = "org.sqlite.JDBC")
+    Database.connect(url = "jdbc:sqlite:note.db", driver = "org.sqlite.JDBC")
     transaction {
-        SchemaUtils.createMissingTablesAndColumns(QuoteTable, UserTable)
+        SchemaUtils.createMissingTablesAndColumns(NoteTable, UserTable)
         commit()
     }
 }

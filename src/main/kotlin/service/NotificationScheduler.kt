@@ -2,7 +2,7 @@ package service
 
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
-import dao.QuoteDao.findAllByNotificationTime
+import dao.NoteDao.findAllByNotificationTime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
@@ -12,10 +12,10 @@ object NotificationScheduler {
     fun checkNotificationTime(bot: Bot) {
         while (true) {
             val currentTime = LocalTime.now().truncatedTo(ChronoUnit.MINUTES)
-            val quotes = findAllByNotificationTime(currentTime.toString())
-            for (quote in quotes) {
+            val notes = findAllByNotificationTime(currentTime.toString())
+            for (note in notes) {
                 transaction {
-                    bot.sendMessage(ChatId.fromId(quote.user.chatId), quote.text)
+                    bot.sendMessage(ChatId.fromId(note.user.chatId), note.text)
                 }
             }
             takeTimeOut(currentTime);

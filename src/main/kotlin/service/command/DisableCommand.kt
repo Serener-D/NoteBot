@@ -3,7 +3,7 @@ package service.command
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Message
-import dao.QuoteDao
+import dao.NoteDao
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object DisableCommand : Command {
@@ -11,10 +11,10 @@ object DisableCommand : Command {
     private const val COMMAND_NAME = "/disable"
 
     override fun execute(message: Message, bot: Bot) {
-        val quotes = QuoteDao.findAllByChatId(message.chat.id)
+        val notes = NoteDao.findAllByChatId(message.chat.id)
         transaction {
-            for (quote in quotes) {
-                quote.notificationEnabled = false
+            for (note in notes) {
+                note.notificationEnabled = false
             }
             commit()
         }
