@@ -4,6 +4,7 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.CallbackQuery
 import com.github.kotlintelegrambot.entities.ChatId
 import dao.UserDao
+import org.jetbrains.exposed.sql.transactions.transaction
 
 object TimezoneCallbackHandler : CallbackHandler {
 
@@ -18,7 +19,10 @@ object TimezoneCallbackHandler : CallbackHandler {
             if (user == null) {
                 UserDao.create(userChatId, timeZone)
             } else {
-                UserDao.update(userChatId, timeZone)
+                transaction {
+                    user.timeZoneOffset = timeZone
+                    commit()
+                }
             }
 
             bot.sendMessage(chatId = ChatId.fromId(userChatId), text = "Timezone set")

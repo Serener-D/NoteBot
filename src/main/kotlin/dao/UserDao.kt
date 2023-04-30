@@ -25,14 +25,4 @@ object UserDao {
         }
     }
 
-    fun update(chatId: Long, timeZoneOffset: String) {
-        transaction {
-            val user = findByChatId(chatId)
-            if (user != null) {
-                user.timeZoneOffset = timeZoneOffset
-            }
-            commit()
-        }
-    }
-
 }
